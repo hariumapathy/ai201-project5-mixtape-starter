@@ -1,3 +1,21 @@
+## AI Usage Section
+I used AI tools (Claude) during various steps of the bug reproduction and bug-hunting process, mainly to understand the flow of the code, what specific functions do, and generating code snippets for quick testing (ex: using the flask shell or viewing the entries in the DB, since I did not know how to do that completely on my own).
+
+Reading the Code:
+- As I read through the relevant files, I used Claude to help me understand what certain blocks of code were during. For example, in the get_friends_listening_now() function (in feed_service.py), I didn't understand the use of the filter method, or what the cutoff variable represented. So, I used Claude to help explain these details.
+- I always read the docstrings before attempting to understand any of the code, to ensure that seeking explanation first did not bias me towards thinking that the function was sound (a well-written and technical function can still disobey intended business logic).
+
+Reproducing bugs:
+- To reproduce the bugs, I needed to get specific playlist, song, and user IDs. Instead of manually doing that, I asked Claude to generate the code in get_IDs_for_bug_reproduce.py by giving it the models.py schema. This file prints the needed IDs, so that I can copy-paste these IDs when doing GET/POST requests via the Postman client.
+- I also used Claude to help generate the code in the file reproduce_bug_1.py, since I was unfamiliar with using datetime and its related methods.
+
+Tracing Function Calls:
+- Tracing routes and function calls was something I did manually. This helped me familiarize myself with the app structure, and is what I used to write the Codebase Map section. This part was not something that I needed AI for, since using AI tools would make the codebase seem like a black box to me.
+
+Post-Fix Checks:
+- I used Claude to help generate request bodies and short flask shell testing snippets, after I implemented a fix for a bug, to ensure that I covered various cases, without having to write all the code on my own. 
+- For certain bugs, I ran my initial fix idea through Claude, but only AFTER I drafted the fix. Using AI to find and implement the fix would prevent me from understanding what actually went wrong. I also didn't want to overuse AI tools due to their tendency to implement overly technical solutions and safeguards for what be a simple fix.
+
 ## Codebase Map
 The data tables/objects are defined in models.py. The important data scheme to note are:
 - User
@@ -35,8 +53,8 @@ Services:
     - record a listening event & update listening streak; fetch listening streak for a given user
 
 Data Flow - Feature: Get all the songs for a given playlist
-1. POST /playlists/<playlist_id>/songs
-2. POST request handled in routes/playlists.py
+1. GET /playlists/<playlist_id>/songs
+2. GET request handled in routes/playlists.py
 3. function get_playlist_songs() is called in services/playlist_service.py
 4. A list of Song dictionaries is returned if playlist_id is found, else ValueError is raised
 
@@ -435,7 +453,7 @@ The fix was to add a few lines of code to create a notification:
         create_notification(
             user_id=song.shared_by,
             notification_type="song_rated",
-            body=f"{user_id.username} rated your song '{song.title}' as {score}/5.",
+            body=f"{rater.username} rated your song '{song.title}' as {score}/5.",
         )
 ```
 
