@@ -335,15 +335,35 @@ Notice there are 6 songs. When examining see_data.py, we can see that the playli
 ### 1 - My listening streak keeps resetting 
 
 **Issue Number, Title:**
-1, My listening streak keeps resetting 
+
 
 **Reproducing the Bug:**
 
 **Finding the Root Cause:**
+- The only way to change a user streak is to record a listening event. This is handled by the route in songs.py, specifically a POST request to  /songs/<song_id>/listen
+- The service function this route calls is record_listening_event() in streak_service.py
+- This function adds a Listening event to the DB, then calls update_listening_streak()
+- Therefore, this function is likely where the bug resides, since the update logic is contained within it
 
 **The Root Cause:**
+In the docstring of the function, the streak rules are that the streak should be incremented for listens within a 1 day period, reset to 1 if the recent listens are more than 1 day apart, and not changed for multiple listens in the same day. 
+
+However, there is a line in the function that contradict the docstring:
+```python
+    if days_since_last == 0:
+        # Already updated today — no change needed
+        return
+    elif days_since_last == 1 and today.weekday() != 6:
+        user.listening_streak += 1
+    else:
+        user.listening_streak = 1
+```
+The check `today.weekday() != 6` results in the streak resetting when `today.weekday() == 6`, which occurs on Sundays. Therefore, the streak resets to 1 for listens on Sundays, regardless of whether the user was maintaining a streak or not.
 
 **Fix and Side-Effect Check:**
+The fix is to remove the check `and today.weekday() != 6`. This prevents the unneeded Sunday reset.
+
+To check for side-effects, I tried adding a Sunday listening event for a user with an active streak, a listening event on a weekday the next day, and a listening event more than 1 day apart (to ensure the reset logic still works). If all three of the streak cases work, then the fix was successful. 
 
 ### 2 - Friends Listening Now shows people from yesterday
 
