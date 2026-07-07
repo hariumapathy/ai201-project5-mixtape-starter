@@ -534,8 +534,20 @@ The rate_song() function checks between a new rating, and an updated rating. Sin
 
 The fix was to add a few lines of code to create a notification:
 ```
-
+ # Fix: create a notification, if the shared_by user ID and rater user_id are different
+    if song.shared_by != user_id:
+        create_notification(
+            user_id=song.shared_by,
+            notification_type="song_rated",
+            body=f"{user_id.username} rated your song '{song.title}' as {score}/5.",
+        )
 ```
+
+To check for side-effects, I reran the bug reproduction steps, this time picking a new song and a new rater user_id, and then checking the notifications of the shared_by user before and after the rating call, to ensure that a new notification appeared.
+
+I also rated a song, using the same user_id as the shared_by user, to ensure that self-notification do not occur.
+
+I also re-rated songs, to ensure that the updated scores came in as new notifications (as per my design decision).
 
 ### 5 - The last song in a playlist never shows up
 
